@@ -77,6 +77,19 @@ examples/
 
 See [`examples/`](examples/) for a fully synthetic sample (rent roll + T-12 + UW baseline) with suggested prompts that exercise the main workflows.
 
+The styling scripts also have demo flags that write sample outputs:
+
+```bash
+python scripts/excel_style.py --demo   # writes a styled sample workbook
+python scripts/docx_style.py --demo    # writes a styled sample memo
+```
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
+```
+
 ## Triggers
 
 The skill activates when Claude detects asset-management context — operating properties, fund-level returns, LP capital accounts, rent rolls, T-12s, operating statements, lender covenants, business plans, capital calls/distributions — even when "asset management" isn't said explicitly. Phrases like "review this property," "should we sell or hold," "covenant test," "variance to budget," "mark to market," or file attachments named `rent_roll.xlsx`, `T12.xlsx`, etc., also trigger it.

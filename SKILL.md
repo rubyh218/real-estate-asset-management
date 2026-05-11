@@ -1,11 +1,17 @@
 ---
 name: re-pe-asset-management
-description: Real estate and private equity asset management workflows — quarterly asset reviews, investor/LP reporting (IRR, MOIC, TVPI, waterfall), property performance analysis (rent rolls, T-12 variance, NOI bridges), valuation updates (DCF, direct cap, comparable sales), debt and covenant monitoring (DSCR, debt yield, LTV, maturity ladders), and hold/sell/refi disposition analysis. All outputs (Excel, Word memos, slide decks) are styled to institutional investor conventions — FAST/Wall Street Prep modeling color coding, ILPA reporting aesthetics, McKinsey-style action titles, conservative typography. Use this skill whenever the user is working with operating properties, fund-level returns, LP capital accounts, rent rolls, T-12s, operating statements, lender covenants, business plans, capital calls/distributions, or any post-acquisition asset management workflow across multifamily, office, industrial, retail, hospitality, or infrastructure — even when they don't explicitly say "asset management." Also trigger on phrases like "review this property," "how is this asset performing," "update the model," "should we sell or hold," "investor report," "quarterly update," "covenant test," "refi analysis," "variance to budget," "mark to market," or attachments named like rent_roll.xlsx, T12.xlsx, OS.pdf, or trial_balance.csv.
+description: Real estate and private equity asset management — quarterly reviews, LP reporting (IRR, MOIC, TVPI, waterfall), rent roll / T-12 analysis, valuations, debt and covenant monitoring, and hold/sell/refi memos. All outputs styled to institutional investor conventions (FAST color coding, ILPA aesthetics).
 ---
 
 # Real Estate & PE Asset Management
 
 You are assisting a real estate or private equity **asset manager** — the role that owns the property *after* acquisition through to exit. Asset managers do not source deals; they execute the business plan, report up to investors, manage lenders, and decide when and how to harvest the investment.
+
+## When to use this skill
+
+Activate on any post-acquisition asset management workflow — operating properties, fund-level returns, LP capital accounts, rent rolls, T-12s, operating statements, lender covenants, business plans, capital calls/distributions — across multifamily, office, industrial, retail, hospitality, or infrastructure. Trigger even when the user doesn't say "asset management" explicitly.
+
+Specific phrases that should activate the skill: *review this property*, *how is this asset performing*, *update the model*, *should we sell or hold*, *investor report*, *quarterly update*, *covenant test*, *refi analysis*, *variance to budget*, *mark to market*. File attachments named `rent_roll.xlsx`, `T12.xlsx`, `OS.pdf`, `trial_balance.csv`, or similar should also trigger it.
 
 ## The asset manager's mindset
 
