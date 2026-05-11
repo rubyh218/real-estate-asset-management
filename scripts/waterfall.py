@@ -1,18 +1,17 @@
 """
 waterfall.py — Compute a real estate / PE distribution waterfall.
 
-Implements an American-style, deal-level waterfall with the standard four tiers
-plus optional second promote hurdle. Most real estate partnerships use
-some variant of this; bespoke modifications (e.g., 50% catch-up,
-pref on contributed-not-outstanding capital) require editing the code.
+Implements an American-style, deal-level waterfall with the standard four tiers.
+Most real estate partnerships use some variant of this; bespoke modifications
+(e.g., 50% catch-up, pref on contributed-not-outstanding capital, a true
+IRR-lookback second hurdle) require editing the code.
 
 Tier structure:
-  Tier 1 — Return of Capital:         100% to LP until contributions returned
-  Tier 2 — Preferred Return:          100% to LP until cumulative pref earned
-  Tier 3 — GP Catch-up:               100% to GP until GP has [promote] share of
-                                       Tiers 2+3 combined ("100% catch-up")
-  Tier 4 — Carried Interest:          LP / GP split per promote_pct (e.g., 80/20)
-  Tier 5 (optional) — Second hurdle:  Higher promote above hurdle IRR
+  Tier 1 — Return of Capital:  100% to LP until contributions returned
+  Tier 2 — Preferred Return:   100% to LP until cumulative pref earned
+  Tier 3 — GP Catch-up:        100% to GP until GP has [promote] share of
+                                Tiers 2+3 combined ("100% catch-up")
+  Tier 4 — Carried Interest:   LP / GP split per promote_pct (e.g., 80/20)
 
 Convention: pref accrues on OUTSTANDING (unreturned) capital, compounded annually.
 
@@ -31,15 +30,13 @@ import csv
 from datetime import date, datetime, timedelta
 from typing import Iterable
 
-from returns import xirr, moic, _parse_date, _parse_csv
+from returns import xirr, moic, parse_date, parse_csv
 
 
 def run_waterfall(
     flows: list[tuple[date, float]],
     pref_rate: float = 0.08,
     promote_pct: float = 0.20,
-    second_hurdle: float | None = None,
-    second_promote: float | None = None,
 ) -> dict:
     """
     Run the waterfall and return per-distribution LP/GP splits plus summary.
@@ -47,8 +44,6 @@ def run_waterfall(
     flows: chronological (date, amount) pairs; contributions negative.
     pref_rate: annual preferred return on outstanding capital (compounded).
     promote_pct: GP's share of profits above pref (e.g., 0.20).
-    second_hurdle: optional second IRR hurdle (e.g., 0.15)
-    second_promote: GP share above second_hurdle (e.g., 0.30)
     """
     flows = sorted(flows, key=lambda x: x[0])
     outstanding_capital = 0.0
@@ -58,11 +53,6 @@ def run_waterfall(
     gp_distributions = []
     cumulative_promote_gp = 0.0
     cumulative_promote_total = 0.0  # Tiers 2 + 3 combined, used to size catch-up
-
-    # For second hurdle we project the LP IRR ex-post; for simplicity here we
-    # apply the promote_pct uniformly and the second hurdle is reserved for
-    # the user to handle by adjusting promote_pct after the LP IRR clears it.
-    # (A true IRR-lookback waterfall requires iterative solving.)
 
     for current_date, amount in flows:
         # Accrue pref on outstanding capital since last cash flow
@@ -98,10 +88,10 @@ def run_waterfall(
                 remaining -= t2
 
             # Tier 3 — GP Catch-up (100% catch-up convention)
-            # GP receives 100% until GP has promote_pct of (Tiers 2 + 3 + 4).
-            # In a 100% catch-up structure, the GP catches up to its share of
-            # the *post-pref* profits, which equals: pref_paid * (promote / (1-promote))
-            if remaining > 0 and cumulative_promote_gp == 0 and cumulative_promote_total > 0:
+            # GP receives 100% until GP has promote_pct of (Tiers 2 + 3 combined).
+            # Target: pref_paid * promote / (1 - promote). Runs every distribution
+            # event because additional Tier 2 pref payments grow the catch-up base.
+            if remaining > 0 and cumulative_promote_total > 0:
                 target_gp = cumulative_promote_total * promote_pct / (1 - promote_pct)
                 t3 = min(remaining, target_gp - cumulative_promote_gp)
                 if t3 > 0:
@@ -149,7 +139,7 @@ def main():
     p.add_argument("--promote", type=float, default=0.20, help="GP promote share (default 0.20)")
     args = p.parse_args()
 
-    flows = _parse_csv(args.csv)
+    flows = parse_csv(args.csv)
     result = run_waterfall(flows, pref_rate=args.pref, promote_pct=args.promote)
 
     print("-" * 64)

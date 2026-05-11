@@ -24,7 +24,7 @@ from datetime import date, datetime
 from typing import Iterable
 
 
-def _parse_date(s: str) -> date:
+def parse_date(s: str) -> date:
     s = s.strip()
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y"):
         try:
@@ -42,10 +42,10 @@ def _xnpv(rate: float, flows: list[tuple[date, float]]) -> float:
     return sum(amt / (1 + rate) ** ((d - t0).days / 365.0) for d, amt in flows)
 
 
-def xirr(flows: list[tuple[date, float]], guess: float = 0.10) -> float:
+def xirr(flows: list[tuple[date, float]]) -> float:
     """
     Solve for the rate such that xnpv(rate) == 0.
-    Brent's method via bisection — robust to bad guesses, no SciPy dependency.
+    Bisection over a wide bracket — robust, no SciPy dependency.
     """
     flows = sorted(flows, key=lambda x: x[0])
     if not any(a < 0 for _, a in flows) or not any(a > 0 for _, a in flows):
@@ -85,18 +85,18 @@ def _parse_inline(s: str) -> list[tuple[date, float]]:
         if not chunk:
             continue
         d_str, amt = chunk.split(":")
-        out.append((_parse_date(d_str), float(amt)))
+        out.append((parse_date(d_str), float(amt)))
     return out
 
 
-def _parse_csv(path: str) -> list[tuple[date, float]]:
+def parse_csv(path: str) -> list[tuple[date, float]]:
     out = []
     with open(path) as f:
         for row in csv.reader(f):
             if not row or row[0].lstrip().startswith("#"):
                 continue
             try:
-                out.append((_parse_date(row[0]), float(row[1].replace(",", ""))))
+                out.append((parse_date(row[0]), float(row[1].replace(",", ""))))
             except (ValueError, IndexError):
                 continue  # skip headers
     return out
@@ -110,7 +110,7 @@ def main():
     p.add_argument("--discount-rate", type=float, default=0.10, help="discount rate for NPV (default 0.10)")
     args = p.parse_args()
 
-    flows = _parse_csv(args.csv) if args.csv else _parse_inline(args.inline)
+    flows = parse_csv(args.csv) if args.csv else _parse_inline(args.inline)
     if len(flows) < 2:
         raise SystemExit("need at least 2 cash flows")
 

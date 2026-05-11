@@ -31,7 +31,7 @@ git clone https://github.com/rubyh218/real-estate-asset-management.git \
 Python dependencies for the helper scripts:
 
 ```bash
-pip install openpyxl python-docx numpy
+pip install -r requirements.txt
 ```
 
 ## Update
