@@ -69,7 +69,13 @@ scripts/
   debt_metrics.py              # DSCR, debt yield, LTV/LTC, max-loan sizing
   excel_style.py               # Institutional Excel formatting helpers
   docx_style.py                # Institutional Word memo formatting helpers
+examples/
+  sample-multifamily/          # Synthetic 24-unit property — rent roll, T-12, UW baseline
 ```
+
+## Try it
+
+See [`examples/`](examples/) for a fully synthetic sample (rent roll + T-12 + UW baseline) with suggested prompts that exercise the main workflows.
 
 ## Triggers
 
