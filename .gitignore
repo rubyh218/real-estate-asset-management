@@ -24,3 +24,6 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+# Claude Code — commit shared agents/settings, ignore local-only overrides
+.claude/settings.local.json
