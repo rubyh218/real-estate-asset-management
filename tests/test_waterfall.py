@@ -65,6 +65,49 @@ class TestWaterfall(unittest.TestCase):
         # comes from independent hand-calc: ~$33,000.
         self.assertGreater(r["gp_total_promote"], 30_000)
 
+    def test_post_tier4_event_does_not_double_charge_catchup(self):
+        """Regression: catch-up base must be Tier 2 only, not Tier 2 + Tier 4.
+
+        If event 1 fully processes all four tiers, the GP is already at promote_pct
+        of total-above-cap. A later event with no new pref must split 80/20 — the
+        Tier 3 catch-up must NOT fire again on prior Tier 4 amounts.
+
+        Before the fix, cumulative_promote_total folded Tier 4 into the catch-up
+        base, so a second event re-triggered the catch-up and over-promoted the GP.
+
+        Setup: $1M contribution, $1.3M at yr 1 (Tier 1+2+3+4 all run; pref = $80k),
+        then $100k at yr 2 (outstanding=0, no new pref → pure 80/20 carry).
+
+        Expected GP total: $20k (yr 1 catch-up) + 20% * $300k (carry on profits
+        above pref+catchup) = $20k + $60k = $80k.
+        """
+        flows = [
+            (date(2020, 1, 1), -1_000_000.0),
+            (date(2021, 1, 1),  1_300_000.0),
+            (date(2022, 1, 1),    100_000.0),
+        ]
+        r = run_waterfall(flows, pref_rate=0.08, promote_pct=0.20)
+
+        self.assertAlmostEqual(r["gp_total_promote"], 80_000.0, places=0)
+        self.assertAlmostEqual(r["lp_distributed"], 1_320_000.0, places=0)
+
+        # Invariant: GP share of total-above-cap == promote_pct after equilibrium
+        # is reached and pref-on-pref is fully consumed.
+        above_cap = 400_000.0  # ($1.3M + $100k) - $1M contributed
+        pref_paid = 80_000.0
+        catchup = pref_paid * 0.20 / 0.80  # $20k
+        # GP / (above_cap - pref_paid) should equal promote_pct (since catchup
+        # has its own ratio that resolves to the same equilibrium).
+        gp_share_of_above_pref = r["gp_total_promote"] / (above_cap - pref_paid)
+        # 80k / 320k = 25% — combination of the $20k catch-up and the 20% T4 split.
+        self.assertAlmostEqual(gp_share_of_above_pref, 0.25, places=4)
+        # And the algebra: catch-up + 20% of (above_pref - catch-up)
+        self.assertAlmostEqual(
+            r["gp_total_promote"],
+            catchup + 0.20 * (above_cap - pref_paid - catchup),
+            places=0,
+        )
+
     def test_early_distribution_below_pref_pays_no_gp(self):
         # Year 1 distribution below pref → all to LP via Tier 1 (cap return).
         # GP gets nothing.

@@ -51,8 +51,8 @@ def run_waterfall(
     prev_date = flows[0][0]
     lp_distributions = []
     gp_distributions = []
-    cumulative_promote_gp = 0.0
-    cumulative_promote_total = 0.0  # Tiers 2 + 3 combined, used to size catch-up
+    cumulative_pref_paid = 0.0     # Tier 2 cumulative — sole base for the catch-up target
+    cumulative_catchup_gp = 0.0    # Tier 3 cumulative — tracks how much catch-up GP has already received
 
     for current_date, amount in flows:
         # Accrue pref on outstanding capital since last cash flow
@@ -84,30 +84,31 @@ def run_waterfall(
                 t2 = min(remaining, accrued_pref)
                 lp_share += t2
                 accrued_pref -= t2
-                cumulative_promote_total += t2  # counts toward catch-up base
+                cumulative_pref_paid += t2
                 remaining -= t2
 
             # Tier 3 — GP Catch-up (100% catch-up convention)
-            # GP receives 100% until GP has promote_pct of (Tiers 2 + 3 combined).
-            # Target: pref_paid * promote / (1 - promote). Runs every distribution
-            # event because additional Tier 2 pref payments grow the catch-up base.
-            if remaining > 0 and cumulative_promote_total > 0:
-                target_gp = cumulative_promote_total * promote_pct / (1 - promote_pct)
-                t3 = min(remaining, target_gp - cumulative_promote_gp)
+            # After Tier 3, GP should hold promote_pct of (Tier 2 + Tier 3 combined).
+            # That requires cumulative T3 = cumulative T2 * promote / (1 - promote).
+            # The base must be Tier 2 ALONE — Tier 4 amounts are already split at
+            # promote_pct so they preserve the equilibrium and must not enter the
+            # catch-up base. Runs every event so newly paid pref keeps catching up.
+            if remaining > 0 and cumulative_pref_paid > 0:
+                target_catchup = cumulative_pref_paid * promote_pct / (1 - promote_pct)
+                t3 = min(remaining, max(0.0, target_catchup - cumulative_catchup_gp))
                 if t3 > 0:
                     gp_share += t3
-                    cumulative_promote_gp += t3
-                    cumulative_promote_total += t3
+                    cumulative_catchup_gp += t3
                     remaining -= t3
 
             # Tier 4 — Carried Interest (promote_pct to GP)
+            # Splits at promote_pct so the (GP share / total above cap) ratio is
+            # preserved — no need to update Tier 2 / Tier 3 cumulatives.
             if remaining > 0:
                 t4_gp = remaining * promote_pct
                 t4_lp = remaining - t4_gp
                 lp_share += t4_lp
                 gp_share += t4_gp
-                cumulative_promote_gp += t4_gp
-                cumulative_promote_total += remaining
                 remaining = 0
 
             lp_distributions.append((current_date, lp_share))
