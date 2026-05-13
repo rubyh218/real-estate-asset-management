@@ -1,18 +1,34 @@
 """
-waterfall.py — Compute a real estate / PE distribution waterfall.
+waterfall.py — Compute real estate / PE distribution waterfalls.
 
-Implements an American-style, deal-level waterfall with the standard four tiers.
-Supports an optional two-tier promote (Tier 4a/4b with an IRR-look-back hurdle).
-Most real estate partnerships use some variant of this; bespoke modifications
-(e.g., 50% catch-up, pref on contributed-not-outstanding capital) require
-editing the code.
+Two entry points:
+  run_waterfall(flows, ...)    — single deal, deal-level / American style.
+                                  Supports an optional two-tier promote
+                                  (Tier 4a/4b with an IRR-look-back hurdle).
+  fund_waterfall(deals, ...)   — multiple deals at fund level (American or
+                                  European), with optional clawback.
 
-Tier structure:
+Tier structure (same in both):
   Tier 1 — Return of Capital:  100% to LP until contributions returned
   Tier 2 — Preferred Return:   100% to LP until cumulative pref earned
   Tier 3 — GP Catch-up:        100% to GP until GP has [promote] share of
                                 Tiers 2+3 combined ("100% catch-up")
-  Tier 4 — Carried Interest:   LP / GP split per promote_pct (e.g., 80/20)
+  Tier 4 — Carried Interest:   LP / GP split per promote_pct (e.g., 80/20).
+                                Optionally a second tier above an LP-IRR
+                                hurdle (e.g., 80/20 to 15% IRR, then 70/30).
+
+American vs. European (fund-level):
+  American: per-deal waterfalls aggregated. GP can take carry on profitable
+            deals immediately, even if later deals lose money. Common in
+            opportunistic / value-add RE funds.
+  European: ALL deal flows pooled chronologically; one waterfall on the fund.
+            GP cannot take carry until LPs are made whole across the fund.
+            Standard for core-RE and closed-end fund vehicles.
+
+Clawback (American mode only):
+  At fund end, compare GP carry under American vs. what European would have
+  produced. If American > European, the excess is what GP must return to LPs.
+  fund_waterfall(...) computes this automatically when compute_clawback=True.
 
 Pref convention (READ BEFORE USING ON A REAL LPA):
 
@@ -32,13 +48,15 @@ Pref convention (READ BEFORE USING ON A REAL LPA):
   Day-count is Actual/365 from the prior cash flow date. LPAs that
   specify 30/360 or Actual/Actual will diverge slightly on long holds.
 
-Other simplifications: no clawback / true-up, no European whole-fund
-waterfall. Bespoke deal mechanics require editing the code.
-
 Usage:
+  # Single-deal:
   python waterfall.py --csv flows.csv --pref 0.08 --promote 0.20
 
-Where flows.csv has signed cash flows from the LP's perspective:
+  # Fund-level (one CSV per deal in the directory):
+  python waterfall.py --fund-dir ./deals/ --style american
+  python waterfall.py --fund-dir ./deals/ --style european
+
+Where each CSV has signed cash flows from the LP's perspective:
   Contributions are NEGATIVE; pre-promote operating/sale cash is POSITIVE.
 
 The script splits the POSITIVE flows between LP and GP according to the
@@ -239,17 +257,125 @@ def run_waterfall(
     }
 
 
+def fund_waterfall(
+    deals: dict[str, list[tuple[date, float]]],
+    *,
+    style: str = "european",
+    pref_rate: float = 0.08,
+    promote_pct: float = 0.20,
+    compute_clawback: bool = True,
+) -> dict:
+    """Run a fund-level waterfall across multiple deals.
+
+    Args:
+      deals: mapping of deal_name -> chronological (date, amount) flows from
+             the LP's perspective (contributions negative, distributions positive).
+      style: "european" pools ALL flows chronologically and runs one waterfall —
+             GP cannot take carry until LPs have been made whole across the
+             entire fund. Standard for core-RE / closed-end fund vehicles.
+             "american" runs the waterfall on each deal independently and
+             aggregates — GP earns carry on each deal as it realizes. Standard
+             for many opportunistic / value-add RE funds.
+      pref_rate, promote_pct: passed through to run_waterfall.
+      compute_clawback: in American mode, also runs an implicit European
+             waterfall to compute the clawback:
+                 clawback = max(0, GP_american - GP_european)
+             That's the excess GP must return to LPs at fund end. Has no
+             effect in European mode (GP cannot be over-promoted by
+             construction).
+
+    Returns a dict with:
+      style, deals (per-deal results dict in American; empty in European),
+      gp_total, lp_distributed, lp_contributed, lp_irr, lp_moic,
+      clawback, and (in American mode) gp_total_if_european for transparency.
+    """
+    if style not in ("american", "european"):
+        raise ValueError(f"style must be 'american' or 'european', got {style!r}")
+    if not deals:
+        raise ValueError("deals dict is empty")
+
+    if style == "european":
+        # Pool every deal's flows into one sorted stream.
+        pooled = [f for flows in deals.values() for f in flows]
+        result = run_waterfall(pooled, pref_rate=pref_rate, promote_pct=promote_pct)
+        return {
+            "style": "european",
+            "deals": {},
+            "gp_total": result["gp_total_promote"],
+            "lp_distributed": result["lp_distributed"],
+            "lp_contributed": result["lp_contributed"],
+            "lp_irr": result["lp_irr"],
+            "lp_moic": result["lp_moic"],
+            "clawback": 0.0,
+        }
+
+    # American: per-deal waterfalls.
+    deal_results = {}
+    gp_total = 0.0
+    for name, flows in deals.items():
+        r = run_waterfall(flows, pref_rate=pref_rate, promote_pct=promote_pct)
+        deal_results[name] = r
+        gp_total += r["gp_total_promote"]
+
+    # Aggregate LP economics by pooling LP flows across deals.
+    all_lp_flows = [f for r in deal_results.values() for f in r["lp_flows"]]
+    try:
+        agg_lp_irr = xirr(all_lp_flows)
+    except ValueError:
+        agg_lp_irr = float("nan")
+    contributed_sum = sum(-a for _, a in all_lp_flows if a < 0)
+    distributed_sum = sum(a for _, a in all_lp_flows if a > 0)
+    agg_lp_moic = (
+        distributed_sum / contributed_sum if contributed_sum > 0 else float("inf")
+    )
+
+    result = {
+        "style": "american",
+        "deals": deal_results,
+        "gp_total": gp_total,
+        "lp_distributed": distributed_sum,
+        "lp_contributed": contributed_sum,
+        "lp_irr": agg_lp_irr,
+        "lp_moic": agg_lp_moic,
+    }
+
+    if compute_clawback:
+        # Run the same flows European-style and compare GP totals.
+        pooled = [f for flows in deals.values() for f in flows]
+        eu = run_waterfall(pooled, pref_rate=pref_rate, promote_pct=promote_pct)
+        result["gp_total_if_european"] = eu["gp_total_promote"]
+        result["clawback"] = max(0.0, gp_total - eu["gp_total_promote"])
+    else:
+        result["clawback"] = 0.0
+
+    return result
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--csv", required=True, help="CSV of date,amount (signed)")
+    src = p.add_mutually_exclusive_group(required=True)
+    src.add_argument("--csv", help="Single-deal CSV of date,amount (signed)")
+    src.add_argument("--fund-dir", help="Directory of one CSV per deal (fund-level mode)")
     p.add_argument("--pref", type=float, default=0.08, help="preferred return (annual, default 0.08)")
     p.add_argument("--promote", type=float, default=0.20, help="GP promote share in Tier 4a (default 0.20)")
     p.add_argument("--second-hurdle", type=float, default=None,
-                   help="LP IRR threshold for second promote tier (e.g., 0.15)")
+                   help="LP IRR threshold for second promote tier (single-deal mode; e.g., 0.15)")
     p.add_argument("--second-promote", type=float, default=None,
                    help="GP promote share above the second hurdle (e.g., 0.30)")
+    p.add_argument("--style", choices=["american", "european"], default="european",
+                   help="Fund-level mode only: 'european' pools all deal flows; "
+                        "'american' computes per-deal then aggregates (default 'european')")
+    p.add_argument("--no-clawback", action="store_true",
+                   help="Skip clawback computation in American fund-level mode")
     args = p.parse_args()
 
+    if args.fund_dir:
+        _run_fund_cli(args)
+    else:
+        _run_single_cli(args)
+
+
+def _run_single_cli(args):
     flows = parse_csv(args.csv)
     result = run_waterfall(
         flows,
@@ -293,6 +419,62 @@ def main():
     ):
         lp = total - gp
         print(f"{d!s:<12} ${total:>14,.0f} ${lp:>14,.0f} ${gp:>14,.0f}")
+
+
+def _run_fund_cli(args):
+    import os
+    import glob
+
+    deals = {}
+    csvs = sorted(glob.glob(os.path.join(args.fund_dir, "*.csv")))
+    if not csvs:
+        raise SystemExit(f"No CSVs found in {args.fund_dir}")
+    for path in csvs:
+        name = os.path.splitext(os.path.basename(path))[0]
+        deals[name] = parse_csv(path)
+
+    result = fund_waterfall(
+        deals,
+        style=args.style,
+        pref_rate=args.pref,
+        promote_pct=args.promote,
+        compute_clawback=not args.no_clawback,
+    )
+
+    bar = "=" * 72
+    print(bar)
+    print(f"FUND-LEVEL WATERFALL ({result['style'].upper()})")
+    print(bar)
+    print(f"Preferred return:          {args.pref * 100:.1f}% annual")
+    print(f"Promote:                   {args.promote * 100:.1f}% to GP above pref")
+    print(f"Deals:                     {len(deals)}")
+    print("-" * 72)
+    print(f"LP contributed:            ${result['lp_contributed']:>15,.0f}")
+    print(f"LP distributed:            ${result['lp_distributed']:>15,.0f}")
+    print(f"LP IRR (pooled):           {result['lp_irr'] * 100:>15.2f}%")
+    print(f"LP MOIC (pooled):          {result['lp_moic']:>15.2f}x")
+    print("-" * 72)
+    print(f"GP total promote:          ${result['gp_total']:>15,.0f}")
+    if result["style"] == "american" and "gp_total_if_european" in result:
+        print(f"  (vs. European-equivalent): ${result['gp_total_if_european']:>15,.0f}")
+        if result["clawback"] > 0:
+            print(f"  CLAWBACK (excess to LP):  ${result['clawback']:>15,.0f}")
+        else:
+            print(f"  Clawback:                  ${0:>15,.0f}  (no excess)")
+    print(bar)
+
+    if result["style"] == "american" and result["deals"]:
+        print()
+        print("PER-DEAL DETAIL")
+        print(f"{'Deal':<24} {'LP IRR':>10} {'LP MOIC':>9} {'GP Promote':>14}")
+        print("-" * 72)
+        for name, r in result["deals"].items():
+            irr_str = f"{r['lp_irr']*100:.2f}%" if r['lp_irr'] == r['lp_irr'] else "n/a"
+            print(
+                f"{name:<24} {irr_str:>10} {r['lp_moic']:>8.2f}x "
+                f"${r['gp_total_promote']:>13,.0f}"
+            )
+        print(bar)
 
 
 if __name__ == "__main__":
