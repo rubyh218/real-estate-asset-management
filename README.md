@@ -80,8 +80,8 @@ See [`examples/`](examples/) for a fully synthetic sample (rent roll + T-12 + UW
 The styling scripts also have demo flags that write sample outputs:
 
 ```bash
-python scripts/excel_style.py --demo   # writes a styled sample workbook
-python scripts/docx_style.py --demo    # writes a styled sample memo
+python scripts/excel_style.py --demo sample.xlsx   # writes a styled sample workbook
+python scripts/docx_style.py --demo sample.docx    # writes a styled sample memo
 ```
 
 ## Tests
