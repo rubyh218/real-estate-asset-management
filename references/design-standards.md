@@ -288,17 +288,26 @@ Example:
 
 ```python
 from openpyxl import Workbook
-from scripts.excel_style import apply_institutional_styles, write_header, write_input, write_formula, write_section, write_total
+from scripts.excel_style import (
+    apply_institutional_styles, set_sheet_defaults,
+    write_header, write_section, write_label, write_units,
+    write_input, write_formula, write_total,
+)
 
 wb = Workbook()
 apply_institutional_styles(wb)
 ws = wb.active
-write_header(ws, "Pro Forma — Marina Apartments — As of 2026-Q1")
-write_section(ws, "Operating Performance")
-write_input(ws, "B5", 4500000, fmt="dollar")
-write_formula(ws, "B6", "=B5/0.055", fmt="dollar")
-write_total(ws, "B7", "=SUM(B5:B6)", fmt="dollar")
+set_sheet_defaults(ws, "Pro Forma — Marina Apartments — As of 2026-Q1")
+write_header(ws, 1, "Pro Forma — Marina Apartments — As of 2026-Q1")
+write_section(ws, 3, "Operating Performance")
+write_label(ws, "B5", "Revenue")
+write_units(ws, "C5", "USD")
+write_input(ws, "D5", 4_500_000, fmt="dollar")
+write_formula(ws, "E5", "=D5*1.03", fmt="dollar")
+write_total(ws, "F5", "=SUM(D5:E5)", fmt="dollar")
 wb.save("output.xlsx")
 ```
+
+Note the `row` argument on `write_header` and `write_section` — they are row-indexed helpers, not cell-ref helpers. The cell-ref helpers (`write_input`, `write_formula`, `write_total`) take A1 strings.
 
 For Word memos, `scripts/docx_style.py` provides equivalent helpers for python-docx (institutional fonts, hierarchy, table styling).
