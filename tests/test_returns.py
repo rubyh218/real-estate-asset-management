@@ -5,7 +5,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 
-from returns import xirr, moic, hold_period, parse_date, _xnpv
+from returns import xirr, moic, hold_period, parse_date, _xnpv, count_sign_changes, xirr_all_roots, xmirr
 
 
 class TestXIRR(unittest.TestCase):
@@ -69,6 +69,127 @@ class TestHoldPeriod(unittest.TestCase):
         # 2021-01-01 → 2022-01-01 is exactly 365 days (no leap).
         flows = [(date(2021, 1, 1), -100.0), (date(2022, 1, 1), 100.0)]
         self.assertAlmostEqual(hold_period(flows), 1.0, places=5)
+
+
+class TestCountSignChanges(unittest.TestCase):
+
+    def test_conventional_flows_one_sign_change(self):
+        flows = [(date(2020, 1, 1), -1000.0), (date(2025, 1, 1), 1500.0)]
+        self.assertEqual(count_sign_changes(flows), 1)
+
+    def test_multiple_distributions_still_one_sign_change(self):
+        flows = [
+            (date(2020, 1, 1), -1000.0),
+            (date(2021, 1, 1), 200.0),
+            (date(2022, 1, 1), 300.0),
+            (date(2025, 1, 1), 800.0),
+        ]
+        self.assertEqual(count_sign_changes(flows), 1)
+
+    def test_recap_pattern_three_sign_changes(self):
+        # Cap call, distribution, recap call, distribution
+        flows = [
+            (date(2020, 1, 1), -1000.0),
+            (date(2021, 1, 1),   800.0),
+            (date(2022, 1, 1),  -500.0),  # recap call
+            (date(2025, 1, 1),  1200.0),
+        ]
+        self.assertEqual(count_sign_changes(flows), 3)
+
+    def test_zero_amounts_ignored(self):
+        flows = [
+            (date(2020, 1, 1), -1000.0),
+            (date(2021, 1, 1),     0.0),
+            (date(2022, 1, 1),  1500.0),
+        ]
+        self.assertEqual(count_sign_changes(flows), 1)
+
+    def test_single_or_zero_flows(self):
+        self.assertEqual(count_sign_changes([]), 0)
+        self.assertEqual(count_sign_changes([(date(2020, 1, 1), -1000.0)]), 0)
+
+
+class TestXIRRAllRoots(unittest.TestCase):
+
+    def test_conventional_flows_return_single_root(self):
+        flows = [(date(2021, 1, 1), -1000.0), (date(2022, 1, 1), 1100.0)]
+        roots = xirr_all_roots(flows)
+        self.assertEqual(len(roots), 1)
+        self.assertAlmostEqual(roots[0], 0.10, places=4)
+
+    def test_classic_two_irr_textbook_case(self):
+        # 1320*v^2 - 2300*v + 1000 = 0 has roots v = 0.9091 and v = 0.8333,
+        # giving IRRs of 10% and 20%. The bisection xirr() returns just one
+        # (and on this case actually fails to converge meaningfully); we
+        # expect xirr_all_roots to find BOTH.
+        flows = [
+            (date(2021, 1, 1), -1000.0),
+            (date(2022, 1, 1),  2300.0),
+            (date(2023, 1, 1), -1320.0),
+        ]
+        roots = xirr_all_roots(flows)
+        self.assertEqual(len(roots), 2)
+        self.assertAlmostEqual(roots[0], 0.10, places=3)
+        self.assertAlmostEqual(roots[1], 0.20, places=3)
+
+    def test_npv_is_zero_at_every_returned_root(self):
+        flows = [
+            (date(2021, 1, 1), -1000.0),
+            (date(2022, 1, 1),  2300.0),
+            (date(2023, 1, 1), -1320.0),
+        ]
+        for r in xirr_all_roots(flows):
+            self.assertLess(abs(_xnpv(r, flows)), 1e-3)
+
+    def test_requires_both_signs(self):
+        with self.assertRaises(ValueError):
+            xirr_all_roots([(date(2020, 1, 1), -100.0), (date(2021, 1, 1), -200.0)])
+
+
+class TestXMIRR(unittest.TestCase):
+
+    def test_zero_rates_reduces_to_geometric_return(self):
+        # With both rates = 0, MIRR = (FV_pos / PV_neg)^(1/yrs) - 1
+        # = (1500/1000)^(1/1) - 1 = 0.50 over 1 year
+        flows = [(date(2021, 1, 1), -1000.0), (date(2022, 1, 1), 1500.0)]
+        self.assertAlmostEqual(xmirr(flows, 0.0, 0.0), 0.50, places=4)
+
+    def test_known_value_with_reinvest(self):
+        # -1000 at t0, +600 at t1, +600 at t2 (3 non-leap years).
+        # PV_neg at t0 = 1000.
+        # FV_pos at t2 = 600 * 1.10^1 + 600 * 1.10^0 = 660 + 600 = 1260.
+        # MIRR = (1260/1000)^(1/2) - 1 = sqrt(1.26) - 1 ≈ 0.12250
+        flows = [
+            (date(2021, 1, 1), -1000.0),
+            (date(2022, 1, 1),   600.0),
+            (date(2023, 1, 1),   600.0),
+        ]
+        self.assertAlmostEqual(xmirr(flows, finance_rate=0.10, reinvest_rate=0.10), 0.12250, places=4)
+
+    def test_always_unique_on_multi_sign_change_case(self):
+        # The classic two-IRR case: xirr() gives one (often wrong) answer;
+        # MIRR gives exactly one, defined.
+        flows = [
+            (date(2021, 1, 1), -1000.0),
+            (date(2022, 1, 1),  2300.0),
+            (date(2023, 1, 1), -1320.0),
+        ]
+        m = xmirr(flows, finance_rate=0.08, reinvest_rate=0.08)
+        # The exact value depends on the rates; here we just assert it's
+        # finite, real, and in a sensible band (well above -1, well below 1).
+        self.assertGreater(m, -0.5)
+        self.assertLess(m, 0.5)
+        # And it must be deterministic.
+        self.assertEqual(m, xmirr(flows, 0.08, 0.08))
+
+    def test_requires_both_signs(self):
+        with self.assertRaises(ValueError):
+            xmirr([(date(2020, 1, 1), -100.0), (date(2021, 1, 1), -200.0)])
+
+    def test_requires_nonzero_horizon(self):
+        # Same date for both flows — undefined.
+        with self.assertRaises(ValueError):
+            xmirr([(date(2020, 1, 1), -100.0), (date(2020, 1, 1), 200.0)])
 
 
 class TestParseDate(unittest.TestCase):
