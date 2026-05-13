@@ -13,7 +13,27 @@ Tier structure:
                                 Tiers 2+3 combined ("100% catch-up")
   Tier 4 — Carried Interest:   LP / GP split per promote_pct (e.g., 80/20)
 
-Convention: pref accrues on OUTSTANDING (unreturned) capital, compounded annually.
+Pref convention (READ BEFORE USING ON A REAL LPA):
+
+  Pref accrues on OUTSTANDING (unreturned) capital — the rate compounds
+  on capital between distribution events.
+
+  Pref does NOT compound on accrued-but-unpaid pref ("pref on pref"). If
+  pref is partially paid (or not paid) in a given period, the unpaid
+  portion carries forward at face — it does not itself earn pref in the
+  next period.
+
+  Many real-world LPAs DO compound pref on accrued pref. If your deal
+  follows that convention, this script will under-state the LP pref
+  balance and over-state GP catch-up timing on long unpaid-pref periods.
+  Verify against the LPA before producing LP-facing numbers.
+
+  Day-count is Actual/365 from the prior cash flow date. LPAs that
+  specify 30/360 or Actual/Actual will diverge slightly on long holds.
+
+Other simplifications: single-tier promote (no IRR-look-back Tier 4b),
+no clawback / true-up, no European whole-fund waterfall. Bespoke deal
+mechanics require editing the code.
 
 Usage:
   python waterfall.py --csv flows.csv --pref 0.08 --promote 0.20
@@ -42,7 +62,9 @@ def run_waterfall(
     Run the waterfall and return per-distribution LP/GP splits plus summary.
 
     flows: chronological (date, amount) pairs; contributions negative.
-    pref_rate: annual preferred return on outstanding capital (compounded).
+    pref_rate: annual preferred return on outstanding capital. Compounded
+        on the *capital* base between events (NOT on accrued-unpaid pref;
+        see module docstring for the convention and its limitations).
     promote_pct: GP's share of profits above pref (e.g., 0.20).
     """
     flows = sorted(flows, key=lambda x: x[0])
