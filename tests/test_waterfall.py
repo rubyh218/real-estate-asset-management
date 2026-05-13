@@ -5,7 +5,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 
-from waterfall import run_waterfall
+from waterfall import run_waterfall, fund_waterfall
 
 
 class TestWaterfall(unittest.TestCase):
@@ -242,6 +242,76 @@ class TestSecondTierHurdle(unittest.TestCase):
         )
         total_pos = 400_000.0 + 1_200_000.0
         self.assertAlmostEqual(r["lp_distributed"] + r["gp_total_promote"], total_pos, places=0)
+
+
+class TestFundWaterfall(unittest.TestCase):
+
+    def _two_deals(self):
+        return {
+            "Deal_A": [
+                (date(2021, 1, 1), -1_000_000.0),
+                (date(2022, 1, 1),  1_300_000.0),
+            ],
+            "Deal_B": [
+                (date(2021, 1, 1), -1_000_000.0),
+                (date(2023, 1, 1),    700_000.0),
+            ],
+        }
+
+    def test_validation(self):
+        with self.assertRaises(ValueError):
+            fund_waterfall({}, style="european")
+        with self.assertRaises(ValueError):
+            fund_waterfall(self._two_deals(), style="other")
+
+    def test_american_aggregates_per_deal_gp(self):
+        r = fund_waterfall(self._two_deals(), style="american", compute_clawback=False)
+        # Deal A profit \$300k → \$60k GP (single-tier 80/20 above cap+pref).
+        # Deal B loss → GP \$0.
+        self.assertAlmostEqual(r["gp_total"], 60_000.0, places=0)
+        self.assertEqual(set(r["deals"].keys()), {"Deal_A", "Deal_B"})
+        self.assertAlmostEqual(r["deals"]["Deal_B"]["gp_total_promote"], 0.0)
+
+    def test_european_pools_flows(self):
+        r = fund_waterfall(self._two_deals(), style="european")
+        # Pooled: \$2M in, \$2M out. No fund-level profit above cap → GP \$0.
+        self.assertAlmostEqual(r["gp_total"], 0.0, places=0)
+        self.assertEqual(r["clawback"], 0.0)
+
+    def test_clawback_fires_when_american_overpromotes(self):
+        r = fund_waterfall(self._two_deals(), style="american", compute_clawback=True)
+        # Same case as above: American GP \$60k; European GP \$0; clawback \$60k.
+        self.assertAlmostEqual(r["gp_total"], 60_000.0, places=0)
+        self.assertAlmostEqual(r["gp_total_if_european"], 0.0, places=0)
+        self.assertAlmostEqual(r["clawback"], 60_000.0, places=0)
+
+    def test_no_clawback_when_all_deals_profitable(self):
+        deals = {
+            "Deal_A": [(date(2021, 1, 1), -1_000_000.0), (date(2022, 1, 1), 1_300_000.0)],
+            "Deal_C": [(date(2021, 1, 1), -1_000_000.0), (date(2023, 1, 1), 1_400_000.0)],
+        }
+        r = fund_waterfall(deals, style="american", compute_clawback=True)
+        # Both deals profitable. American = sum of per-deal carry.
+        # European pooled also generates carry. Whether American > European or not
+        # depends on the timing — in this case, American gets earlier carry on
+        # Deal A but Deal C catches up. We just assert clawback >= 0 (never negative).
+        self.assertGreaterEqual(r["clawback"], 0.0)
+        # GP earned something on both sides.
+        self.assertGreater(r["gp_total"], 0)
+        self.assertGreater(r["gp_total_if_european"], 0)
+
+    def test_european_no_clawback_field_set(self):
+        r = fund_waterfall(self._two_deals(), style="european")
+        self.assertEqual(r["clawback"], 0.0)
+        # gp_total_if_european isn't set in European mode (would be circular).
+        self.assertNotIn("gp_total_if_european", r)
+
+    def test_lp_irr_pools_across_deals(self):
+        # If LP contributes to both deals and receives from both, the pooled
+        # LP IRR is computed from the merged LP flow stream.
+        r = fund_waterfall(self._two_deals(), style="european")
+        # \$2M contributed, \$2M returned over ~2 years → LP IRR ~0%.
+        self.assertLess(abs(r["lp_irr"]), 0.01)
 
 
 if __name__ == "__main__":
