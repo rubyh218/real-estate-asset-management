@@ -108,6 +108,31 @@ When a loan approaches maturity (or a refi-opportunistic moment arises), the ass
 - **Prepayment cost** on existing loan (defeasance, yield maintenance, or step-down — read the loan doc)
 - **Closing costs** (title, lender legal, financing fee, etc.) — typically 1-2% of new loan
 
+### Yield maintenance + refi-timing analysis
+
+Most agency (Fannie/Freddie/FHA) and fixed-rate CMBS loans carry a **yield maintenance** prepay penalty for the bulk of the term, converting to a flat fee (commonly 1% of UPB) during an **open period** in the last 3-6 months. The make-whole math is:
+
+> YM = PV at Treasury yield of the spread between the contract rate and the matched-maturity Treasury, applied to the remaining scheduled balance.
+
+The AM's recurring question is: **how much do I save by waiting until the open period vs. paying off / refinancing today?** Use `scripts/yield_maintenance.py`:
+
+```bash
+python scripts/yield_maintenance.py \
+    --upb 50000000 --loan-rate 0.045 --treasury-rate 0.025 \
+    --maturity 2028-06-30 --today 2026-05-14 \
+    --amort-yrs 30 --open-period-months 3 --open-period-fee 0.01
+```
+
+Returns: current YM penalty, open-period flat fee, dollar/% savings if you wait, months until the open period begins. When the spread is tight (e.g., loan rate at 4.25% vs. Treasury at 4.10%), YM can be *less* than the 1% open-period fee — the script correctly reports zero savings rather than a negative number.
+
+**Caveat:** YM definitions vary by loan doc. Common variations:
+- PV at Treasury yield only (the "Freddie standard," what this script computes)
+- PV at Treasury + a spread (rarer, lender-friendly)
+- YM with a 1%-of-UPB floor (common in older docs)
+- Defeasance (a different mechanism — securities substitution, not a fee)
+
+Read the prepayment exhibit in the loan doc before quoting a number to IC.
+
 ### Standard refi exhibit
 
 ```

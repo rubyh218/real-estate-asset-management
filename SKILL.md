@@ -187,8 +187,11 @@ The `scripts/` directory contains helpers for repetitive math and styled output.
 
 **Analysis:**
 - `scripts/returns.py` — IRR, NPV, MOIC, equity multiple from a cash flow stream
-- `scripts/waterfall.py` — American waterfall with pref + 100% catchup + promote
+- `scripts/waterfall.py` — American waterfall with pref + 100% catchup + promote; `fund_waterfall(deals, style=...)` for European whole-fund + clawback
 - `scripts/debt_metrics.py` — DSCR, debt yield, LTV/LTC, breakeven occupancy, max-loan sizing
+- `scripts/yield_maintenance.py` — YM prepay penalty + open-period flat-fee comparison + "savings if wait" for refi-timing decisions
+- `scripts/noi_bridge.py` — NOI variance bridge generator (UW vs Actual line-item walk, sorted by |impact|)
+- `scripts/rent_roll.py` — Rent roll analyzer: physical/leased/economic occupancy, GPR, LTL, WALT, by-unit-type breakdown, 4-quarter expiration ladder
 
 **Styling (use whenever generating Excel or Word output):**
 - `scripts/excel_style.py` — Institutional Excel formatting (FAST/Wall Street Prep color coding, named styles, no gridlines, parenthetical negatives). Has a `--demo` flag that writes a sample workbook.
