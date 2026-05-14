@@ -55,6 +55,7 @@ When a request comes in, identify the workflow and read the relevant reference f
 | If the user wants to... | Read |
 |---|---|
 | Produce a quarterly asset review, update a business plan, or write IC memo on an operating asset | `references/quarterly-asset-review.md` |
+| Produce a monthly operating review (multi-baseline variance, exception flags, debt + YM clock) | `references/monthly-operating-review.md` |
 | Calculate or explain IRR, MOIC, TVPI, capital accounts, waterfalls, promote/carry, J-curve, or produce an LP report | `references/investor-reporting.md` |
 | Analyze a rent roll, T-12, operating statement, NOI bridge, or variance to budget/UW | `references/performance-analysis.md` |
 | Update a valuation, run DCF or direct cap, source/adjust comps, or do a mark-to-market | `references/valuation.md` |
@@ -190,8 +191,9 @@ The `scripts/` directory contains helpers for repetitive math and styled output.
 - `scripts/waterfall.py` — American waterfall with pref + 100% catchup + promote; `fund_waterfall(deals, style=...)` for European whole-fund + clawback
 - `scripts/debt_metrics.py` — DSCR, debt yield, LTV/LTC, breakeven occupancy, max-loan sizing
 - `scripts/yield_maintenance.py` — YM prepay penalty + open-period flat-fee comparison + "savings if wait" for refi-timing decisions
-- `scripts/noi_bridge.py` — NOI variance bridge generator (UW vs Actual line-item walk, sorted by |impact|)
-- `scripts/rent_roll.py` — Rent roll analyzer: physical/leased/economic occupancy, GPR, LTL, WALT, by-unit-type breakdown, 4-quarter expiration ladder
+- `scripts/noi_bridge.py` — NOI variance bridge (UW vs Actual line-item walk, sorted by |impact|)
+- `scripts/variance_report.py` — Multi-baseline / multi-basis operating variance + exception flags (vs UW / Budget / Prior; dollar / $/unit/mo / %EGR / %OpEx / %var; tighter thresholds on tax + insurance)
+- `scripts/rent_roll.py` — Rent roll analyzer (occupancy, GPR, LTL, WALT, expiration ladder)
 
 **Styling (use whenever generating Excel or Word output):**
 - `scripts/excel_style.py` — Institutional Excel formatting (FAST/Wall Street Prep color coding, named styles, no gridlines, parenthetical negatives). Has a `--demo` flag that writes a sample workbook.
