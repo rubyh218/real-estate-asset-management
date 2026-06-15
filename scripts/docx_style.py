@@ -11,7 +11,7 @@ Produces IC memos / LP letters with the conservative institutional look:
 
 Usage:
     from docx import Document
-    from docx_style import apply_memo_styles, add_heading, add_para, add_table, add_cover_page
+    from scripts.docx_style import apply_memo_styles, add_heading, add_para, add_table, add_cover_page
 
     doc = Document()
     apply_memo_styles(doc, theme="modern")  # or "traditional"

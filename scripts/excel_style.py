@@ -10,7 +10,7 @@ Implements the canonical sell-side / buy-side modeling conventions:
 Usage (programmatic):
 
     from openpyxl import Workbook
-    from excel_style import apply_institutional_styles, write_header, write_input, write_formula, write_section, write_subtotal, write_total, set_sheet_defaults
+    from scripts.excel_style import apply_institutional_styles, write_header, write_input, write_formula, write_section, write_subtotal, write_total, set_sheet_defaults
 
     wb = Workbook()
     apply_institutional_styles(wb)
