@@ -194,11 +194,18 @@ def to_xlsx(
 ) -> None:
     """Write the bridge to an Excel workbook styled to institutional conventions."""
     from openpyxl import Workbook
-    from excel_style import (
-        apply_institutional_styles, set_sheet_defaults,
-        write_header, write_section, write_label,
-        write_input, write_subtotal, write_total, write_note,
-    )
+    try:  # works both as a flat script (scripts/ on path) and as a package import
+        from excel_style import (
+            apply_institutional_styles, set_sheet_defaults,
+            write_header, write_section, write_label,
+            write_input, write_subtotal, write_total, write_note,
+        )
+    except ImportError:
+        from scripts.excel_style import (
+            apply_institutional_styles, set_sheet_defaults,
+            write_header, write_section, write_label,
+            write_input, write_subtotal, write_total, write_note,
+        )
 
     wb = Workbook()
     apply_institutional_styles(wb)
