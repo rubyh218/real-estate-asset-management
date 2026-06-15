@@ -1,5 +1,5 @@
 ---
-name: re-pe-asset-management
+name: real-estate-asset-management
 description: Real estate and private equity asset management — quarterly reviews, LP reporting (IRR, MOIC, TVPI, waterfall), rent roll / T-12 analysis, valuations, debt and covenant monitoring, and hold/sell/refi memos. All outputs styled to institutional investor conventions (FAST color coding, ILPA aesthetics).
 ---
 

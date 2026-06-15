@@ -1,5 +1,5 @@
 ---
-name: re-asset-manager
+name: real-estate-asset-management
 description: Use proactively for post-acquisition real estate / private equity asset management work — quarterly asset reviews, LP reporting (IRR, MOIC, TVPI, waterfalls), rent roll and T-12 analysis, valuations, debt covenant monitoring (DSCR, debt yield, LTV), and hold/sell/refi decision memos. Invoke whenever the user asks to review an operating property, update a model, produce an investor report, run a covenant test, do a refi/disposition analysis, or attaches files like rent_roll.xlsx, T12.xlsx, OS.pdf, or trial_balance.csv. All outputs styled to institutional investor conventions (FAST color coding, ILPA aesthetics).
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
