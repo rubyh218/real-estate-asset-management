@@ -198,13 +198,13 @@ def to_xlsx(
         from excel_style import (
             apply_institutional_styles, set_sheet_defaults,
             write_header, write_section, write_label,
-            write_input, write_subtotal, write_total, write_note,
+            write_formula, write_subtotal, write_total, write_note,
         )
     except ImportError:
         from scripts.excel_style import (
             apply_institutional_styles, set_sheet_defaults,
             write_header, write_section, write_label,
-            write_input, write_subtotal, write_total, write_note,
+            write_formula, write_subtotal, write_total, write_note,
         )
 
     wb = Workbook()
@@ -223,18 +223,27 @@ def to_xlsx(
     write_label(ws, "B5", f"{baseline_label} NOI", bold=True)
     write_subtotal(ws, "E5", result.baseline_noi, fmt="dollar")
 
-    row = 7
+    first_row = 7
+    row = first_row
     sorted_lines = sorted(result.lines, key=lambda L: -abs(L.impact_on_noi))
     for L in sorted_lines:
         if L.impact_on_noi == 0:
             continue
         write_label(ws, f"B{row}", L.line_item)
-        write_input(ws, f"E{row}", L.impact_on_noi, fmt="dollar")
+        # Per-line impacts are derived (actual vs baseline), not hardcoded
+        # assumptions — render them as black computed values, not blue inputs.
+        write_formula(ws, f"E{row}", f"={L.impact_on_noi:.2f}", fmt="dollar")
         row += 1
 
     end_row = row + 1
     write_label(ws, f"B{end_row}", f"{actual_label} NOI", bold=True)
-    write_total(ws, f"E{end_row}", result.actual_noi, fmt="dollar")
+    # Actual NOI = baseline + sum of drivers, as a live formula so the bridge
+    # visibly foots rather than carrying a hardcoded endpoint.
+    if row > first_row:
+        actual_formula = f"=E5+SUM(E{first_row}:E{row - 1})"
+    else:
+        actual_formula = "=E5"
+    write_total(ws, f"E{end_row}", actual_formula, fmt="dollar")
 
     write_note(
         ws,
