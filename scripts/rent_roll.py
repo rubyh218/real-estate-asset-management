@@ -26,12 +26,12 @@ Status values (case-insensitive; alternates in parens):
   MTM              month-to-month (occupied, no fixed lease_end)
 
 Conventions:
-  - Physical occupancy: counts Occupied + Notice
-  - Leased occupancy:   counts Occupied + Notice + SNO
-  - Economic occupancy: sum of in-place rents (Occupied + Notice) divided by GPR
+  - Physical occupancy: counts Occupied + Notice + MTM (all in-place paying units)
+  - Leased occupancy:   counts Occupied + Notice + SNO + MTM
+  - Economic occupancy: sum of in-place rents (Occupied + Notice + MTM) divided by GPR
   - GPR (annualized):   12 * sum of market rents across ALL units
-  - LTL %:              (sum of market - in_place across occupied) / GPR
-  - WALT (rent-weighted): excludes MTM (lease_end < as_of) leases
+  - LTL %:              (sum of market - in_place across paying units) / GPR
+  - WALT (rent-weighted): excludes MTM and expired leases (no future lease_end)
   - Expiration ladder:  rolling 12 months by quarter from as_of
 
 Usage:
