@@ -68,7 +68,10 @@ import csv
 from datetime import date, datetime, timedelta
 from typing import Iterable
 
-from returns import xirr, moic, parse_date, parse_csv, _xnpv
+try:  # works both as a flat script (scripts/ on path) and as a package import
+    from returns import xirr, moic, parse_date, parse_csv, _xnpv
+except ImportError:
+    from scripts.returns import xirr, moic, parse_date, parse_csv, _xnpv
 
 
 def run_waterfall(

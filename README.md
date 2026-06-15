@@ -1,5 +1,7 @@
 # Real Estate & PE Asset Management — Claude Skill
 
+[![tests](https://github.com/rubyh218/real-estate-asset-management/actions/workflows/tests.yml/badge.svg)](https://github.com/rubyh218/real-estate-asset-management/actions/workflows/tests.yml)
+
 A [Claude Code](https://claude.com/claude-code) skill for real estate and private equity **asset management** workflows — the work that happens after acquisition through to exit.
 
 Covers:
@@ -47,6 +49,7 @@ git pull
 SKILL.md                       # Entry point — workflow router and core principles
 references/
   quarterly-asset-review.md    # QAR / IC memo workflow
+  monthly-operating-review.md  # Multi-baseline variance, exception flags, debt + YM clock
   investor-reporting.md        # LP reporting, waterfall, IRR/MOIC/TVPI
   performance-analysis.md      # Rent rolls, T-12, NOI bridges
   valuation.md                 # DCF, direct cap, comps, mark-to-market
@@ -64,9 +67,13 @@ assets/
   qar-template.md              # Quarterly asset review template
   disposition-memo-template.md # Hold/sell/refi memo template
 scripts/
-  returns.py                   # IRR, NPV, MOIC from cash flow streams
-  waterfall.py                 # American waterfall (pref + catchup + promote)
+  returns.py                   # IRR, NPV, MOIC, MIRR + multi-IRR detection
+  waterfall.py                 # Deal + fund waterfall (pref, catchup, two-tier promote, clawback)
   debt_metrics.py              # DSCR, debt yield, LTV/LTC, max-loan sizing
+  yield_maintenance.py         # YM prepay penalty + refi-timing decision support
+  noi_bridge.py                # NOI variance bridge (UW vs Actual line-item walk)
+  variance_report.py           # Multi-baseline / multi-basis operating variance + exception flags
+  rent_roll.py                 # Rent roll analyzer (occupancy, GPR, LTL, WALT, expiration ladder)
   excel_style.py               # Institutional Excel formatting helpers
   docx_style.py                # Institutional Word memo formatting helpers
 examples/
