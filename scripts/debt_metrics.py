@@ -81,7 +81,7 @@ def size_max_loan(
     # Then back-solve loan from DS using the amortizing payment formula.
     max_ds = noi / min_dscr
     if amort_yrs <= 0:
-        by_dscr = max_ds / rate
+        by_dscr = max_ds / rate if rate > 0 else float("inf")
     else:
         mr = rate / 12
         n = amort_yrs * 12

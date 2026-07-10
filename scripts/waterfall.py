@@ -194,7 +194,10 @@ def run_waterfall(
                     # NPV(hurdle, lp_distributions_so_far) + lp_total_this_event * df = 0
                     # => lp_total_this_event = -NPV / df
                     # => lp_t4_to_hurdle = lp_total_this_event - lp_share (so far this event)
-                    npv_prior = _xnpv(second_hurdle, lp_distributions)
+                    npv_prior = (
+                        _xnpv(second_hurdle, lp_distributions)
+                        if lp_distributions else 0.0
+                    )
                     years_to_now = (current_date - t0).days / 365.0
                     df = 1.0 / (1.0 + second_hurdle) ** years_to_now
                     lp_share_at_hurdle = -npv_prior / df
@@ -241,7 +244,10 @@ def run_waterfall(
 
         prev_date = current_date
 
-    lp_irr = xirr(lp_distributions)
+    try:
+        lp_irr = xirr(lp_distributions)
+    except ValueError:
+        lp_irr = float("nan")  # e.g., a total-loss deal with no distributions
     lp_moic, lp_contrib, lp_dist = moic(lp_distributions)
     gp_total = sum(a for _, a in gp_distributions if a > 0)
 

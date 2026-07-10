@@ -69,24 +69,47 @@ def _xnpv(rate: float, flows: list[tuple[date, float]]) -> float:
 def xirr(flows: list[tuple[date, float]]) -> float:
     """
     Solve for the rate such that xnpv(rate) == 0.
-    Bisection over a wide bracket — robust, no SciPy dependency.
+    Bisection over a bracket verified to contain a root — no SciPy dependency.
+
+    The upper bound starts at +1000% and expands when NPV is still positive
+    there (very high-return streams). If the endpoints do not bracket a root
+    (possible with multiple sign changes), falls back to xirr_all_roots()
+    and returns the root closest to zero; raises ValueError if no real root
+    exists in the scan range.
 
     Caveat: for flows with multiple sign changes, NPV(r) can have multiple
-    positive real roots. Bisection returns ONE of them — which one depends
-    on the bracket, not on economics. Use count_sign_changes() to detect
-    this and xirr_all_roots() / xmirr() to handle it correctly.
+    positive real roots and no single number is "the" IRR. Use
+    count_sign_changes() to detect this and xirr_all_roots() / xmirr() to
+    handle it correctly.
     """
     flows = sorted(flows, key=lambda x: x[0])
     if not any(a < 0 for _, a in flows) or not any(a > 0 for _, a in flows):
         raise ValueError("IRR requires both negative and positive cash flows")
 
     lo, hi = -0.999999, 10.0  # -100% to +1000% annual
+    v_lo = _xnpv(lo, flows)
+    v_hi = _xnpv(hi, flows)
+    while v_hi > 0 and hi < 1e6:
+        hi *= 10  # IRR beyond the current upper bound — widen it
+        v_hi = _xnpv(hi, flows)
+    if v_lo == 0:
+        return lo
+    if v_hi == 0:
+        return hi
+    if (v_lo > 0) == (v_hi > 0):
+        # Endpoints don't bracket a root — bisection would silently converge
+        # to an endpoint that isn't one. Scan for every real root instead.
+        roots = xirr_all_roots(flows, bracket=(-0.95, hi))
+        if not roots:
+            raise ValueError("no real IRR root found in the scan range")
+        return min(roots, key=abs)
+
     for _ in range(200):
         mid = (lo + hi) / 2
         v = _xnpv(mid, flows)
         if abs(v) < 1e-6 or (hi - lo) < 1e-9:
             return mid
-        if v > 0:
+        if (v > 0) == (v_lo > 0):
             lo = mid
         else:
             hi = mid

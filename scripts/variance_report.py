@@ -244,7 +244,7 @@ def format_report(
         lines = sorted(lines, key=lambda L: -abs(L.impacts[baseline]))
 
     # Column widths
-    line_w = max(20, max(len(L.line_item) for L in lines) + 2)
+    line_w = max(20, max((len(L.line_item) for L in lines), default=0) + 2)
     col_w = 14   # wide enough for $ amounts with commas + parens
 
     out: list[str] = []

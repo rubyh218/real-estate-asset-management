@@ -119,9 +119,8 @@ class TestXIRRAllRoots(unittest.TestCase):
 
     def test_classic_two_irr_textbook_case(self):
         # 1320*v^2 - 2300*v + 1000 = 0 has roots v = 0.9091 and v = 0.8333,
-        # giving IRRs of 10% and 20%. The bisection xirr() returns just one
-        # (and on this case actually fails to converge meaningfully); we
-        # expect xirr_all_roots to find BOTH.
+        # giving IRRs of 10% and 20%. xirr() returns just one (the root
+        # closest to zero); we expect xirr_all_roots to find BOTH.
         flows = [
             (date(2021, 1, 1), -1000.0),
             (date(2022, 1, 1),  2300.0),
@@ -203,6 +202,31 @@ class TestParseDate(unittest.TestCase):
     def test_bad_format_raises(self):
         with self.assertRaises(ValueError):
             parse_date("not-a-date")
+
+
+class TestXIRRBracketRobustness(unittest.TestCase):
+
+    def test_irr_above_1000pct_expands_bracket(self):
+        # True IRR = 4,900% — beyond the original +1000% upper bound. The old
+        # bisection silently returned the bracket endpoint (10.0) as if it
+        # were the answer.
+        flows = [(date(2021, 1, 1), -100.0), (date(2022, 1, 1), 5000.0)]
+        r = xirr(flows)
+        self.assertAlmostEqual(r, 49.0, places=2)
+        self.assertLess(abs(_xnpv(r, flows)), 0.01)
+
+    def test_two_root_stream_returns_an_actual_root(self):
+        # NPV has two real roots (10% and 20%). The old bracket geometry
+        # collapsed to -100%, which is not a root at all. Now: a genuine
+        # root, deterministically the one closest to zero.
+        flows = [
+            (date(2021, 1, 1), -1000.0),
+            (date(2022, 1, 1),  2300.0),
+            (date(2023, 1, 1), -1320.0),
+        ]
+        r = xirr(flows)
+        self.assertAlmostEqual(r, 0.10, places=4)
+        self.assertLess(abs(_xnpv(r, flows)), 1e-3)
 
 
 if __name__ == "__main__":

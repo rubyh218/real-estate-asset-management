@@ -296,5 +296,15 @@ class TestFlagLines(unittest.TestCase):
         self.assertLess(out.index("[CRITICAL]"), out.index("[WARN]"))
 
 
+class TestFormatEmptyReport(unittest.TestCase):
+
+    def test_zero_line_report_formats_without_crashing(self):
+        # A header-only CSV builds an empty report; format_report used to
+        # raise ValueError on max() over the empty line list.
+        report = build_report([], columns=["UW", "Actual"])
+        text = format_report(report)
+        self.assertIn("OPERATING VARIANCE REPORT", text)
+
+
 if __name__ == "__main__":
     unittest.main()

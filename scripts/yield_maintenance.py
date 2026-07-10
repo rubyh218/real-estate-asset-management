@@ -65,8 +65,8 @@ class YMResult:
     today: date
     maturity: date
     ym_expiry_date: date            # the boundary between YM and open-period
-    months_to_ym_expiry: int        # negative if already in open period
-    months_to_maturity: int         # negative if past maturity
+    months_to_ym_expiry: int        # 0 if already at/inside the open period
+    months_to_maturity: int         # 0 if at/past maturity
     upb: float
     loan_rate: float
     treasury_rate: float
@@ -82,10 +82,15 @@ class YMResult:
 # ---------------------------------------------------------------------------
 
 def _months_between(d1: date, d2: date) -> int:
-    """Inclusive month count from d1 to d2. Returns 0 if d2 < d1."""
-    if d2 < d1:
+    """Whole-or-partial months from d1 to d2, rounded up — a 1-day remainder
+    counts as a full month, so the YM clock never hits 0 before the boundary
+    date. Returns 0 if d2 <= d1."""
+    if d2 <= d1:
         return 0
-    return (d2.year - d1.year) * 12 + (d2.month - d1.month)
+    n = (d2.year - d1.year) * 12 + (d2.month - d1.month)
+    if _add_months(d1, n) < d2:
+        n += 1
+    return n
 
 
 def _add_months(d: date, n: int) -> date:
