@@ -195,5 +195,19 @@ class TestAddMonths(unittest.TestCase):
         self.assertEqual(_add_months(date(2026, 1, 31), 1), date(2026, 2, 28))
 
 
+class TestWALTExcludesMTM(unittest.TestCase):
+
+    def test_mtm_with_stale_future_lease_end_excluded(self):
+        # An MTM unit that still carries a (stale) future lease_end must not
+        # enter the WALT population — the docs promise WALT excludes MTM.
+        units = [
+            _unit("1", "Occupied", lease_end=date(2027, 1, 1)),
+            _unit("2", "MTM", lease_end=date(2028, 1, 1)),
+        ]
+        a = analyze(units, as_of=date(2026, 1, 1))
+        self.assertEqual(a.walt_population_count, 1)
+        self.assertAlmostEqual(a.walt_years, 1.0, places=2)
+
+
 if __name__ == "__main__":
     unittest.main()

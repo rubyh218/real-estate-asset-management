@@ -51,6 +51,7 @@ Read **only** the references relevant to the request.
 | If the user wants to... | Read |
 |---|---|
 | Produce a QAR, update a business plan, or write an IC memo on an operating asset | `references/quarterly-asset-review.md` |
+| Produce a monthly operating review (multi-baseline variance, exception flags, debt + YM clock) | `references/monthly-operating-review.md` |
 | Calculate IRR/MOIC/TVPI, capital accounts, waterfalls, promote/carry, or produce an LP report | `references/investor-reporting.md` |
 | Analyze a rent roll, T-12, operating statement, NOI bridge, or variance to budget/UW | `references/performance-analysis.md` |
 | Update a valuation, run DCF or direct cap, source/adjust comps, mark to market | `references/valuation.md` |
@@ -146,9 +147,13 @@ When the user pastes a number, ask whether it's UW, budget, actual, or projected
 Use these rather than computing by hand or hand-building output files:
 
 **Analysis** (under `scripts/`):
-- `returns.py` — IRR, NPV, MOIC, equity multiple
-- `waterfall.py` — American waterfall with pref + 100% catchup + promote
+- `returns.py` — IRR, NPV, MOIC, equity multiple + multi-IRR detection
+- `waterfall.py` — American waterfall with pref + 100% catchup + two-tier promote; `fund_waterfall(deals, style=...)` for European whole-fund + clawback
 - `debt_metrics.py` — DSCR, debt yield, LTV/LTC, breakeven occupancy, max-loan sizing
+- `yield_maintenance.py` — YM prepay penalty + open-period comparison for refi-timing decisions
+- `noi_bridge.py` — NOI variance bridge (UW vs Actual line-item walk)
+- `variance_report.py` — multi-baseline / multi-basis operating variance + exception flags
+- `rent_roll.py` — rent roll analyzer (occupancy, GPR, LTL, WALT, expiration ladder)
 
 **Styling (whenever generating Excel or Word output):**
 - `excel_style.py` — institutional Excel formatting

@@ -175,5 +175,38 @@ class TestDateHelpers(unittest.TestCase):
         self.assertEqual(_months_between(date(2026, 10, 1), date(2027, 4, 1)), 6)
 
 
+class TestMonthsBetweenDayAccuracy(unittest.TestCase):
+
+    def test_partial_month_rounds_up(self):
+        # Day-of-month matters: 1 day shy of the target date is still a
+        # (partial) month on the YM clock, not zero.
+        self.assertEqual(_months_between(date(2025, 11, 9), date(2025, 11, 10)), 1)
+        self.assertEqual(_months_between(date(2025, 8, 9), date(2025, 11, 10)), 4)
+        # Aligned or later day-of-month: unchanged whole-month counts.
+        self.assertEqual(_months_between(date(2025, 8, 10), date(2025, 11, 10)), 3)
+        self.assertEqual(_months_between(date(2025, 8, 14), date(2025, 11, 10)), 3)
+
+    def test_zero_when_dates_equal(self):
+        self.assertEqual(_months_between(date(2025, 11, 10), date(2025, 11, 10)), 0)
+
+
+class TestPenaltyJustBeforeOpenPeriod(unittest.TestCase):
+
+    def test_day_before_open_period_is_not_free(self):
+        # 2025-11-09 is one day before the open period starts (2025-11-10).
+        # The old calendar-month arithmetic reported a $0 YM penalty here —
+        # an actionable wrong answer in a refi-timing tool.
+        r = analyze_prepay_timing(
+            upb=1_000_000, loan_rate=0.06, treasury_rate=0.04,
+            maturity=date(2026, 2, 10), today=date(2025, 11, 9),
+            open_period_months=3, open_period_fee_pct=0.01, amort_yrs=0,
+        )
+        self.assertFalse(r.in_open_period)
+        self.assertGreater(r.current_ym_penalty, 0.0)
+        # ≈ one month of 2% spread on $1M, discounted one month at Treasury.
+        expected = 1_000_000 * 0.02 / 12 / (1 + 0.04 / 12)
+        self.assertAlmostEqual(r.current_ym_penalty, expected, places=2)
+
+
 if __name__ == "__main__":
     unittest.main()

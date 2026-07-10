@@ -30,7 +30,9 @@ Conventions:
   - Leased occupancy:   counts Occupied + Notice + SNO + MTM
   - Economic occupancy: sum of in-place rents (Occupied + Notice + MTM) divided by GPR
   - GPR (annualized):   12 * sum of market rents across ALL units
-  - LTL %:              (sum of market - in_place across paying units) / GPR
+  - LTL %:              sum of per-unit max(market - in_place, 0) across paying
+                        units, / GPR. Units above market are floored at 0 —
+                        gain-to-lease does not net against loss-to-lease.
   - WALT (rent-weighted): excludes MTM and expired leases (no future lease_end)
   - Expiration ladder:  rolling 12 months by quarter from as_of
 
@@ -187,7 +189,10 @@ def analyze(units: list[Unit], as_of: date) -> RentRollAnalysis:
     ltl_pct_of_gpr = ltl_dollars_annual / gpr_annual if gpr_annual > 0 else 0.0
 
     # WALT (rent-weighted): only on units with valid future lease_end.
-    walt_population = [u for u in paying if u.lease_end and u.lease_end >= as_of]
+    walt_population = [
+        u for u in paying
+        if u.status != "MTM" and u.lease_end and u.lease_end >= as_of
+    ]
     mtm_count = sum(1 for u in paying if u.status == "MTM" or not u.lease_end)
     walt_population_count = len(walt_population)
     if walt_population and any(u.in_place_rent > 0 for u in walt_population):

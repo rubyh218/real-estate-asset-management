@@ -79,5 +79,18 @@ class TestSizeMaxLoan(unittest.TestCase):
         self.assertLessEqual(r["implied_ltv"], 0.65 + 1e-6)
 
 
+class TestSizeMaxLoanZeroRateIO(unittest.TestCase):
+
+    def test_zero_rate_interest_only_is_not_dscr_bound(self):
+        # 0% interest-only debt has no debt service, so DSCR cannot bind.
+        # Used to raise ZeroDivisionError.
+        r = size_max_loan(
+            noi=1_000_000, value=20_000_000, rate=0.0, amort_yrs=0,
+            max_ltv=0.65, min_dscr=1.25, min_debt_yield=0.08,
+        )
+        self.assertEqual(r["constraints"]["DSCR"], float("inf"))
+        self.assertNotEqual(r["binding"], "DSCR")
+
+
 if __name__ == "__main__":
     unittest.main()
