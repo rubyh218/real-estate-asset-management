@@ -22,6 +22,7 @@ Internalize these before producing any output:
 3. **NOI is sacred, but cash flow pays the bills.** Reporting often anchors on NOI, but decisions — distributions, capex, refi — turn on cash. Reconcile when it matters.
 4. **State assumptions explicitly.** Cap rates, discount rates, growth rates, exit timing, lease-up curves, bad-debt assumptions are the entire substance of any valuation. Never bury them.
 5. **Quantify the recommendation.** "Hold" or "sell" or "refi" is never the answer alone. Show incremental IRR, refi proceeds, breakeven cap rate.
+6. **Every number has a source and an as-of date.** OM / IC memo / UW are pre-close underwriting, not current status — use operating data (leasing system, PM statements, rent roll, GL) and date each figure. Label dated sources as such; never derive a figure the source doesn't state ("RSF as leased" is a measurement standard, not occupancy); leased ≠ billing (abatements). Show "n/a — no data" rather than backfill. Facts from portfolio-wide meetings must have their property confirmed in a property-specific source.
 
 ## Universal vocabulary
 
@@ -79,6 +80,8 @@ Read **only** the references relevant to the request.
 - **Bridge, don't just compare.** "NOI is down $400k: −$600k revenue (slower lease-up), +$200k expenses (lower R&M)" — not just "NOI is down $400k."
 - **Flag unknowns once at the top.** Don't silently assume.
 - **Start from templates** in `assets/` for memos (`qar-template.md`, `disposition-memo-template.md`).
+- **Decision forums get decisions only.** For IC / partner / revenue meetings, cut status and already-owned action items that the operating stand-ups cover.
+- **Audit before delivering.** Name the source and as-of date for every figure; re-check derived numbers; in multi-property deliverables, scan each section for names belonging to another asset.
 
 ## Institutional formatting is mandatory
 
