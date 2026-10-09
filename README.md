@@ -24,6 +24,7 @@ This plugin is instructions plus a set of local Python helper scripts. Here is e
 - **Installs two Python packages if missing.** Before the first script run, Claude checks for `openpyxl` and `python-docx` and, if they are not installed, downloads them from PyPI with `pip`. This is the only network access.
 - **Sends no data anywhere.** The scripts make no network calls and do not contact any external service, API, or server. The plugin includes no MCP connectors, hooks, or telemetry.
 - **Stores nothing.** The plugin keeps no data between sessions. Any files it creates are saved where you choose and are yours to keep or delete.
+- **Not intended for people under 18.**
 
 Your property, fund, and investor data stays in your conversation with Claude and the files you create.
 
