@@ -16,6 +16,17 @@ All Excel, Word, and slide outputs are styled to institutional investor conventi
 
 Asset-class coverage: multifamily, office, industrial, retail, hospitality, infrastructure.
 
+## What this plugin runs
+
+This plugin is instructions plus a set of local Python helper scripts. Here is everything it does outside of the conversation:
+
+- **Runs Python scripts locally.** The scripts in `skills/real-estate-asset-management/scripts/` do the math (IRR, waterfalls, DSCR, rent roll and variance analysis) and format Excel and Word files. They read only the files you give Claude and write output files to your working folder.
+- **Installs two Python packages if missing.** Before the first script run, Claude checks for `openpyxl` and `python-docx` and, if they are not installed, downloads them from PyPI with `pip`. This is the only network access.
+- **Sends no data anywhere.** The scripts make no network calls and do not contact any external service, API, or server. The plugin includes no MCP connectors, hooks, or telemetry.
+- **Stores nothing.** The plugin keeps no data between sessions. Any files it creates are saved where you choose and are yours to keep or delete.
+
+Your property, fund, and investor data stays in your conversation with Claude and the files you create.
+
 ## Install
 
 This repo is a Claude plugin and its own plugin marketplace. Pick the option that matches how you use Claude.
