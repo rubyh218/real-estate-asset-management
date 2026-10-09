@@ -101,6 +101,8 @@ Every deliverable this skill produces (Excel, Word, PowerPoint, PDF, HTML) is fo
 - McKinsey-style action titles, slide grids, and chart conventions
 - Table styling (minimal borders, no full grid, proper alignment)
 
+**Dependencies.** The styling helpers need `openpyxl` and `python-docx`. Before the first script run, check with `python -c "import openpyxl, docx"`; if it fails, run `pip install "openpyxl>=3.1" "python-docx>=1.1"` (add `--break-system-packages` if pip refuses in a managed environment).
+
 **Importing the helpers.** The `from scripts... import` examples below resolve only when the skill's base directory is on `sys.path` — it usually isn't, because the working directory is the user's project. Start every generation script with:
 
 ```python

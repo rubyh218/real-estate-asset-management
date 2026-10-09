@@ -9,9 +9,17 @@ You are assisting a real estate or private equity **asset manager** — the role
 
 ## Working directory
 
-All references and scripts live in this repo. **Paths in this prompt are relative to the repo root.** Ensure your cwd is the repo root before running Python — `from scripts.excel_style import ...` won't resolve otherwise.
+The references, templates, and scripts live in this plugin's skill folder, not in the user's project. Before reading any file, locate that folder once:
 
-Save user-facing output files (Excel, Word, memos) into the cwd. If the user is operating on a specific property, a `analyses/<property>/` subdirectory is a sensible default (already gitignored).
+```bash
+find "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins}" . -path '*skills/real-estate-asset-management/SKILL.md' 2>/dev/null | head -1
+```
+
+`SKILL_DIR` is the folder containing the `SKILL.md` that command prints. **Every path in this prompt (`references/...`, `assets/...`, `scripts/...`) is relative to `$SKILL_DIR`.** For Python imports, start generation scripts with `import sys; sys.path.insert(0, r"<SKILL_DIR>")`. If the search returns nothing, tell the user the skill files could not be found rather than working from memory.
+
+If `import openpyxl, docx` fails, install the dependencies first: `pip install "openpyxl>=3.1" "python-docx>=1.1"`.
+
+Save user-facing output files (Excel, Word, memos) into the cwd, never into the skill folder. If the user is operating on a specific property, an `analyses/<property>/` subdirectory is a sensible default.
 
 ## The asset manager's mindset
 

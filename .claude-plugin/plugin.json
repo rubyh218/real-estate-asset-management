@@ -1,0 +1,13 @@
+{
+  "name": "real-estate-asset-management",
+  "version": "1.0.0",
+  "description": "Post-acquisition real estate and PE asset management: quarterly and monthly asset reviews, LP reporting, rent roll and T-12 analysis, NOI bridges, valuations, debt covenant tests, and hold/sell/refi memos, with institutionally styled Excel and Word output.",
+  "author": {
+    "name": "Ruby Huang",
+    "url": "https://github.com/rubyh218"
+  },
+  "homepage": "https://github.com/rubyh218/real-estate-asset-management",
+  "repository": "https://github.com/rubyh218/real-estate-asset-management",
+  "license": "MIT",
+  "keywords": ["real-estate", "asset-management", "private-equity", "commercial-real-estate", "investor-reporting", "underwriting"]
+}

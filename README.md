@@ -1,8 +1,8 @@
-# Real Estate & PE Asset Management — Claude Skill
+# Real Estate & PE Asset Management — Claude Plugin
 
 [![tests](https://github.com/rubyh218/real-estate-asset-management/actions/workflows/tests.yml/badge.svg)](https://github.com/rubyh218/real-estate-asset-management/actions/workflows/tests.yml)
 
-A [Claude Code](https://claude.com/claude-code) skill for real estate and private equity **asset management** workflows — the work that happens after acquisition through to exit.
+A Claude plugin for real estate and private equity **asset management** workflows — the work that happens after acquisition through to exit.
 
 Covers:
 - Quarterly asset reviews and IC memos
@@ -18,67 +18,109 @@ Asset-class coverage: multifamily, office, industrial, retail, hospitality, infr
 
 ## Install
 
-Clone into your Claude Code skills directory:
+This repo is a Claude plugin and its own plugin marketplace. Pick the option that matches how you use Claude.
+
+### Claude.ai, Claude Desktop, or Cowork
+
+1. Open **Customize > Plugins**.
+2. Choose **Add > Add marketplace** and enter `rubyh218/real-estate-asset-management`.
+3. Find **real-estate-asset-management** in the list and select **Add**.
+
+The plugin is saved to your account, so it also syncs to Cowork and Claude Code when you sign in with the same account.
+
+To install without a marketplace, download this repo as a `.zip` and use **Add > Upload plugin**.
+
+### Claude Code
 
 ```bash
-# User-level (available across all projects)
-git clone https://github.com/rubyh218/real-estate-asset-management.git \
-  ~/.claude/skills/real-estate-asset-management
-
-# Or project-level
-git clone https://github.com/rubyh218/real-estate-asset-management.git \
-  .claude/skills/real-estate-asset-management
+claude plugin marketplace add rubyh218/real-estate-asset-management
+claude plugin install real-estate-asset-management@rubyh218-plugins
 ```
 
-Python dependencies for the helper scripts:
+Or inside a session: `/plugin marketplace add rubyh218/real-estate-asset-management`, then `/plugin install real-estate-asset-management@rubyh218-plugins`.
+
+The skill loads automatically when the task matches. To call it directly, type `/real-estate-asset-management:real-estate-asset-management`.
+
+### Python dependencies
+
+The helper scripts need `openpyxl` and `python-docx`. Claude installs them on first use if they are missing. To install them yourself:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Update
+### Upgrading from the old install
+
+Earlier versions were installed by cloning into `~/.claude/skills/real-estate-asset-management`. That path no longer works because `SKILL.md` moved into `skills/`. Remove the old clone and install the plugin instead:
 
 ```bash
-cd ~/.claude/skills/real-estate-asset-management
-git pull
+rm -rf ~/.claude/skills/real-estate-asset-management
 ```
+
+## Update
+
+Claude.ai and Desktop: open the plugin in **Customize > Plugins** and select **Check for updates**, or turn on **Sync automatically** for the marketplace.
+
+Claude Code:
+
+```bash
+claude plugin marketplace update rubyh218-plugins
+```
+
+## What's included
+
+| Component | Works in | Purpose |
+|---|---|---|
+| Skill: `real-estate-asset-management` | Chat, Cowork, Claude Code | Workflow router, references, templates, and scripts |
+| Agent: `real-estate-asset-management` | Cowork, Claude Code | Subagent Claude can delegate asset management work to |
 
 ## Structure
 
 ```
-SKILL.md                       # Entry point — workflow router and core principles
-references/
-  quarterly-asset-review.md    # QAR / IC memo workflow
-  monthly-operating-review.md  # Multi-baseline variance, exception flags, debt + YM clock
-  investor-reporting.md        # LP reporting, waterfall, IRR/MOIC/TVPI
-  performance-analysis.md      # Rent rolls, T-12, NOI bridges
-  valuation.md                 # DCF, direct cap, comps, mark-to-market
-  debt-monitoring.md           # DSCR, debt yield, LTV, refi
-  disposition-analysis.md      # Hold/sell/refi decisions
-  design-standards.md          # Institutional formatting conventions
-  asset-classes/
-    multifamily.md
-    office.md
-    industrial.md
-    retail.md
-    hospitality.md
-    infrastructure.md
-assets/
-  qar-template.md              # Quarterly asset review template
-  disposition-memo-template.md # Hold/sell/refi memo template
-scripts/
-  returns.py                   # IRR, NPV, MOIC, MIRR + multi-IRR detection
-  waterfall.py                 # Deal + fund waterfall (pref, catchup, two-tier promote, clawback)
-  debt_metrics.py              # DSCR, debt yield, LTV/LTC, max-loan sizing
-  yield_maintenance.py         # YM prepay penalty + refi-timing decision support
-  noi_bridge.py                # NOI variance bridge (UW vs Actual line-item walk)
-  variance_report.py           # Multi-baseline / multi-basis operating variance + exception flags
-  rent_roll.py                 # Rent roll analyzer (occupancy, GPR, LTL, WALT, expiration ladder)
-  excel_style.py               # Institutional Excel formatting helpers
-  docx_style.py                # Institutional Word memo formatting helpers
+.claude-plugin/
+  plugin.json                  # Plugin manifest
+  marketplace.json             # Marketplace catalog (this repo lists itself)
+skills/
+  real-estate-asset-management/
+    SKILL.md                   # Entry point: workflow router and core principles
+    references/
+      quarterly-asset-review.md    # QAR / IC memo workflow
+      monthly-operating-review.md  # Multi-baseline variance, exception flags, debt + YM clock
+      investor-reporting.md        # LP reporting, waterfall, IRR/MOIC/TVPI
+      performance-analysis.md      # Rent rolls, T-12, NOI bridges
+      valuation.md                 # DCF, direct cap, comps, mark-to-market
+      debt-monitoring.md           # DSCR, debt yield, LTV, refi
+      disposition-analysis.md      # Hold/sell/refi decisions
+      design-standards.md          # Institutional formatting conventions
+      asset-classes/               # Multifamily, office, industrial, retail, hospitality, infrastructure
+    assets/
+      qar-template.md              # Quarterly asset review template
+      disposition-memo-template.md # Hold/sell/refi memo template
+    scripts/
+      returns.py                   # IRR, NPV, MOIC, MIRR + multi-IRR detection
+      waterfall.py                 # Deal + fund waterfall (pref, catchup, two-tier promote, clawback)
+      debt_metrics.py              # DSCR, debt yield, LTV/LTC, max-loan sizing
+      yield_maintenance.py         # YM prepay penalty + refi-timing decision support
+      noi_bridge.py                # NOI variance bridge (UW vs Actual line-item walk)
+      variance_report.py           # Multi-baseline / multi-basis operating variance + exception flags
+      rent_roll.py                 # Rent roll analyzer (occupancy, GPR, LTL, WALT, expiration ladder)
+      excel_style.py               # Institutional Excel formatting helpers
+      docx_style.py                # Institutional Word memo formatting helpers
+agents/
+  real-estate-asset-management.md  # Subagent definition
 examples/
-  sample-multifamily/          # Synthetic 24-unit property — rent roll, T-12, UW baseline
+  sample-multifamily/          # Synthetic 24-unit property: rent roll, T-12, UW baseline
+tests/                         # Unit tests for the analysis scripts
 ```
+
+## Develop locally
+
+```bash
+claude plugin validate .
+claude --plugin-dir .
+```
+
+When you release changes, bump `version` in `.claude-plugin/plugin.json` so installed copies pick up the update.
 
 ## Try it
 
@@ -87,8 +129,8 @@ See [`examples/`](examples/) for a fully synthetic sample (rent roll + T-12 + UW
 The styling scripts also have demo flags that write sample outputs:
 
 ```bash
-python scripts/excel_style.py --demo sample.xlsx   # writes a styled sample workbook
-python scripts/docx_style.py --demo sample.docx    # writes a styled sample memo
+python skills/real-estate-asset-management/scripts/excel_style.py --demo sample.xlsx   # writes a styled sample workbook
+python skills/real-estate-asset-management/scripts/docx_style.py --demo sample.docx    # writes a styled sample memo
 ```
 
 ## Tests

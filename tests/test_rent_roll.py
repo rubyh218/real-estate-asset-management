@@ -3,7 +3,7 @@ import sys
 import unittest
 from datetime import date
 
-sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "skills", "real-estate-asset-management", "scripts")))
 
 from rent_roll import Unit, analyze, parse_csv, _add_months
 

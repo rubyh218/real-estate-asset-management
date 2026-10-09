@@ -1,0 +1,15 @@
+{
+  "name": "rubyh218-plugins",
+  "description": "Claude plugins for real estate and private equity asset management",
+  "owner": {
+    "name": "Ruby Huang",
+    "url": "https://github.com/rubyh218"
+  },
+  "plugins": [
+    {
+      "name": "real-estate-asset-management",
+      "source": "./",
+      "description": "Asset reviews, LP reporting, rent roll and T-12 analysis, valuations, debt covenants, and hold/sell/refi memos for CRE and PE"
+    }
+  ]
+}

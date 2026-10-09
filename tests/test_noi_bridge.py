@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "skills", "real-estate-asset-management", "scripts")))
 
 from noi_bridge import build_bridge, format_bridge, BridgeLine, BridgeResult
 

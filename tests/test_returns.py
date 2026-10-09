@@ -3,7 +3,7 @@ import sys
 import unittest
 from datetime import date
 
-sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "skills", "real-estate-asset-management", "scripts")))
 
 from returns import xirr, moic, hold_period, parse_date, _xnpv, count_sign_changes, xirr_all_roots, xmirr
 
